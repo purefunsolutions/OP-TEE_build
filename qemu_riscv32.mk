@@ -35,6 +35,20 @@ BR2_TARGET_GENERIC_GETTY_PORT ?= "ttyS0"
 BR2_TARGET_ROOTFS_EXT2 ?= y
 BR2_TARGET_ROOTFS_EXT2_SIZE ?= "260M"
 
+# OP-TEE's floating point. RV32_FPU=y builds OP-TEE and its TAs with
+# compressed instructions and the FPU, as plat-virt has them on RV64, which
+# the libgcc of the rv32gc/ilp32d toolchain matches. RV32_FPU=n keeps
+# plat-virt's RV32 defaults, rv32ima soft-float, and builds the secure side
+# with RV32_ILP32_CROSS_COMPILE, a toolchain with an ilp32 libgcc from the
+# environment: the riscv-collab ones are all ilp32d. Linux and its user
+# space are rv32gc either way.
+RV32_FPU ?= y
+ifeq ($(RV32_FPU),n)
+RV32_ILP32_CROSS_COMPILE ?= riscv32-unknown-linux-musl-
+CROSS_COMPILE_S_USER ?= "$(CCACHE)$(RV32_ILP32_CROSS_COMPILE)"
+CROSS_COMPILE_S_KERNEL ?= "$(CCACHE)$(RV32_ILP32_CROSS_COMPILE)"
+endif
+
 include common.mk
 
 ################################################################################
@@ -174,10 +188,13 @@ OPTEE_OS_COMMON_FLAGS += CFG_RISCV_PLIC=n
 # domain's next-addr in the DTB, and with U-Boot's CONFIG_SPL_OPTEE_LOAD_ADDR.
 OPTEE_OS_COMMON_FLAGS += CFG_TDDRAM_START=0x8E000000
 OPTEE_OS_COMMON_FLAGS += CFG_TDDRAM_SIZE=0x01000000
-# Compressed instructions and the FPU, as plat-virt has them on RV64: the
-# libgcc of the rv32gc/ilp32d toolchain then matches OP-TEE's ABI.
+ifeq ($(RV32_FPU),y)
 OPTEE_OS_COMMON_FLAGS += CFG_RISCV_ISA_C=y
 OPTEE_OS_COMMON_FLAGS += CFG_RISCV_FPU=y
+else
+# And the TAs built in optee_os's own tree
+OPTEE_OS_COMMON_FLAGS += CROSS_COMPILE_ta_rv32="$(CCACHE)$(RV32_ILP32_CROSS_COMPILE)"
+endif
 
 optee-os: optee-os-common | $(BINARIES_PATH)
 	ln -sf $(OPTEE_OS_BIN) $(BINARIES_PATH)/tee.bin
