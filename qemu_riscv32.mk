@@ -129,7 +129,8 @@ u-boot-clean:
 LINUX_DEFCONFIG_COMMON_ARCH := riscv
 LINUX_DEFCONFIG_COMMON_FILES := \
 	$(LINUX_PATH)/arch/riscv/configs/defconfig \
-	$(LINUX_PATH)/arch/riscv/configs/32-bit.config
+	$(LINUX_PATH)/arch/riscv/configs/32-bit.config \
+	$(CURDIR)/kconfigs/qemu_riscv.conf
 
 LINUX_COMMON_FLAGS += ARCH=riscv
 LINUX_COMMON_TARGETS += Image dtbs
