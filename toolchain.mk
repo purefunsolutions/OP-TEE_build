@@ -103,13 +103,28 @@ RISCV64_CROSS_COMPILE 		?= $(RISCV64_PATH)/bin/riscv64-unknown-linux-gnu-
 RISCV64_GCC_RELEASE_DATE	?= 2026.05.06
 RISCV64_GCC_VERSION		?= riscv64-glibc-ubuntu-22.04-gcc-$(RISCV64_GCC_RELEASE_DATE)
 SRC_RISCV64_GCC			?= https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/$(RISCV64_GCC_RELEASE_DATE)/riscv64-glibc-ubuntu-22.04-gcc.tar.xz
+# Please keep in sync with br-ext/configs/toolchain-riscv32
+RISCV32_PATH 			?= $(TOOLCHAIN_ROOT)/riscv32
+RISCV32_CROSS_COMPILE 		?= $(RISCV32_PATH)/bin/riscv32-unknown-linux-gnu-
+RISCV32_GCC_RELEASE_DATE	?= 2026.05.06
+RISCV32_GCC_VERSION		?= riscv32-glibc-ubuntu-22.04-gcc-$(RISCV32_GCC_RELEASE_DATE)
+SRC_RISCV32_GCC			?= https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/$(RISCV32_GCC_RELEASE_DATE)/riscv32-glibc-ubuntu-22.04-gcc.tar.xz
 
 .PHONY: toolchains
+# A RISC-V platform is either all 32-bit or all 64-bit
+ifeq ($(COMPILE_NS_USER),32)
+toolchains: riscv32-toolchain
+else
 toolchains: riscv64-toolchain
+endif
 
 .PHONY: riscv64-toolchain
 riscv64-toolchain:
 	$(call dltc,$(RISCV64_PATH),$(SRC_RISCV64_GCC),$(RISCV64_GCC_VERSION))
+
+.PHONY: riscv32-toolchain
+riscv32-toolchain:
+	$(call dltc,$(RISCV32_PATH),$(SRC_RISCV32_GCC),$(RISCV32_GCC_VERSION))
 
 endif
 
