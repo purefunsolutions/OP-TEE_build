@@ -264,6 +264,12 @@ endif
 QEMU_CHECK_ARGS = $(QEMU_BASE_ARGS)
 QEMU_CHECK_ARGS += -serial mon:stdio
 
+# The check script, in this directory. qemu-riscv64-check.exp has nothing
+# 64-bit in it and stops at the first failing test, as the other QEMU
+# checks do; qemu-riscv-xtest-all.exp runs all of xtest and lists every
+# failure.
+CHECK_EXP ?= qemu-riscv64-check.exp
+
 check: $(CHECK_DEPS)
 	ln -sf $(SDCARD_IMG) $(BINARIES_PATH)/sdcard.img
 	cd $(BINARIES_PATH) && \
@@ -271,7 +277,7 @@ check: $(CHECK_DEPS)
 		export QEMU_CHECK_ARGS="$(QEMU_CHECK_ARGS)" && \
 		export XEN_BOOT=n && \
 		export RUST_ENABLE=n && \
-		expect $(ROOT)/build/qemu-riscv64-check.exp -- $(check-args) || \
+		expect $(ROOT)/build/$(CHECK_EXP) -- $(check-args) || \
 		(if [ "$(DUMP_LOGS_ON_ERROR)" ]; then \
 			echo "== $$PWD/serial0.log:"; \
 			cat serial0.log; \
