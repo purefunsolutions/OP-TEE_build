@@ -33,6 +33,9 @@ expect {
 	timeout {
 		fail_with_message "!!! Timeout while booting" 1
 	}
+	eof {
+		fail_with_message "!!! QEMU exited while booting" 1
+	}
 	"ogin:"
 }
 
