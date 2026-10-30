@@ -26,9 +26,17 @@ close [open "serial1.log" "w+"]
 info "Starting QEMU..."
 spawn sh -c "$::env(QEMU) $::env(QEMU_CHECK_ARGS)"
 
+# OP-TEE's panics: "Panic at <file>" and "Panic '<message>' at <file>".
+# Nothing runs after one, and the other hart keeps Linux printing RCU
+# stall warnings, so silence never comes.
+set optee_panic {(..TC:[^\r\n]*Panic[ '][^\r\n]*)}
+
 expect {
 	"Kernel panic" {
 		fail_with_message "!!! Kernel panic" 1
+	}
+	-re $optee_panic {
+		fail_with_message "!!! OP-TEE: $expect_out(1,string)" 1
 	}
 	timeout {
 		fail_with_message "!!! Timeout while booting" 1
@@ -51,6 +59,9 @@ expect {
 	}
 	"Kernel panic" {
 		fail_with_message "!!! Kernel panic" 1
+	}
+	-re $optee_panic {
+		fail_with_message "!!! OP-TEE: $expect_out(1,string)" 1
 	}
 	-re {[^\r\n]*[\r\n]+} {
 		exp_continue
