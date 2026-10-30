@@ -29,7 +29,7 @@ spawn sh -c "$::env(QEMU) $::env(QEMU_CHECK_ARGS)"
 # OP-TEE's panics: "Panic at <file>" and "Panic '<message>' at <file>".
 # Nothing runs after one, and the other hart keeps Linux printing RCU
 # stall warnings, so silence never comes.
-set optee_panic {(..TC:[^\r\n]*Panic[ '][^\r\n]*)}
+set optee_panic {(..TC:[^\r\n]*Panic[ '][^\r\n]*)[\r\n]}
 
 expect {
 	"Kernel panic" {
