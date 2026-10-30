@@ -11,10 +11,19 @@ DEBUG ?= 1
 PLAT_QEMU ?= virt
 ifeq ($(PLAT_QEMU),virt)
 QEMU_BOARD_FLAVOR := riscv32-virt-optee
-QEMU_LINUX_DTB_BASENAME := qemu_rv32_virt_domain.dtb
 OPTEE_OS_PLATFORM = virt-rv32
 else
 $(error Unsupported PLAT_QEMU value $(PLAT_QEMU))
+endif
+# Harts: 2, an SMP machine as on qemu_riscv64, or 1, a single-core one. The
+# DTB and OP-TEE's core count follow.
+QEMU_SMP ?= 2
+ifeq ($(QEMU_SMP),2)
+QEMU_LINUX_DTB_BASENAME := qemu_rv32_virt_domain.dtb
+else ifeq ($(QEMU_SMP),1)
+QEMU_LINUX_DTB_BASENAME := qemu_rv32_1hart_virt_domain.dtb
+else
+$(error Unsupported QEMU_SMP value $(QEMU_SMP))
 endif
 # Keep TLS-specific xtest cases disabled, as on qemu_riscv64, where
 # os_test.ta carries TLS relocations that ldelf doesn't handle.
@@ -170,7 +179,7 @@ linux-cleaner: linux-cleaner-common
 ################################################################################
 CFG_TEE_CORE_LOG_LEVEL ?= 4
 CFG_TEE_TA_LOG_LEVEL ?= 4
-CFG_TEE_CORE_NB_CORE ?= 2
+CFG_TEE_CORE_NB_CORE ?= $(QEMU_SMP)
 CFG_NUM_THREADS ?= 2
 
 OPTEE_OS_COMMON_FLAGS += CFG_TEE_CORE_NB_CORE=$(CFG_TEE_CORE_NB_CORE)
@@ -206,7 +215,7 @@ buildroot: update_rootfs
 update_rootfs: linux
 	@mkdir -p --mode=755 $(BUILDROOT_TARGET_ROOT)/boot
 	@install -v -p --mode=644 $(LINUX_IMAGE) $(BUILDROOT_TARGET_ROOT)/boot/Image
-	@install -v -p --mode=644 $(LINUX_DTB) $(BUILDROOT_TARGET_ROOT)/boot/$(QEMU_LINUX_DTB_BASENAME)
+	@install -v -p --mode=644 $(LINUX_DTB) $(BUILDROOT_TARGET_ROOT)/boot/qemu_rv32.dtb
 
 ################################################################################
 # QEMU
@@ -232,13 +241,14 @@ qemu-clean:
 run: all
 	$(MAKE) run-only
 
-QEMU_SMP ?= 2
 # Linux maps at most 1 GiB of RAM on RV32
 QEMU_MEM ?= 1024
 QEMU_CPU ?= rv32,zkr=on
 QEMU_LOADER_ADDR ?= 0x80200000
+# The host port forwarded to the guest's ssh, one per QEMU on a host
+QEMU_SSH_PORT ?= 2200
 QEMU_EXTRA_ARGS := -device virtio-net-pci,netdev=net0 \
-		   -netdev user,id=net0,hostfwd=tcp::2200-:22
+		   -netdev user,id=net0,hostfwd=tcp::$(QEMU_SSH_PORT)-:22
 
 # The riscv32-softmmu part of the path to qemu-system-riscv32 was removed
 # somewhere between 8.1.2 and 9.1.2.
